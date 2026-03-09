@@ -33,6 +33,9 @@ IMAGE_SIZES = ["1K", "2K", "4K"]
 
 API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
+ALLOWED_REF_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+MAX_REF_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
 
 def get_api_key() -> str:
     """
@@ -74,14 +77,55 @@ def detect_image_format(image_bytes: bytes) -> tuple[str, str]:
 def load_image_as_base64(image_path: str) -> tuple[str, str]:
     """
     Load an image file and return (base64_data, mime_type).
+
+    Validates:
+    - File exists
+    - Extension is an allowed image type
+    - File is within size limit
+    - Magic bytes confirm it is a real image (not a renamed text/binary file)
     """
     path = Path(image_path)
+
     if not path.exists():
         print(f"Error: Reference image not found: {image_path}", file=sys.stderr)
         sys.exit(1)
 
+    if path.suffix.lower() not in ALLOWED_REF_EXTENSIONS:
+        print(
+            f"Error: Reference file '{image_path}' has disallowed extension '{path.suffix}'. "
+            f"Allowed: {', '.join(sorted(ALLOWED_REF_EXTENSIONS))}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    file_size = path.stat().st_size
+    if file_size > MAX_REF_SIZE_BYTES:
+        print(
+            f"Error: Reference file '{image_path}' is {file_size // (1024*1024)} MB, "
+            f"exceeds {MAX_REF_SIZE_BYTES // (1024*1024)} MB limit.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     image_bytes = path.read_bytes()
     mime_type, _ = detect_image_format(image_bytes)
+
+    # detect_image_format falls back to "image/png" for unrecognised bytes —
+    # verify it truly matched a known magic sequence by re-checking.
+    known_magic = (
+        image_bytes[:8] == b'\x89PNG\r\n\x1a\n'
+        or image_bytes[:2] == b'\xff\xd8'
+        or (image_bytes[:4] == b'RIFF' and image_bytes[8:12] == b'WEBP')
+        or image_bytes[:6] in (b'GIF87a', b'GIF89a')
+    )
+    if not known_magic:
+        print(
+            f"Error: Reference file '{image_path}' does not appear to be a valid image "
+            f"(unrecognised file signature).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     base64_data = base64.b64encode(image_bytes).decode("utf-8")
     return base64_data, mime_type
 
