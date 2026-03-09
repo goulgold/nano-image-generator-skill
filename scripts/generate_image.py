@@ -33,6 +33,8 @@ IMAGE_SIZES = ["1K", "2K", "4K"]
 
 API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
+MAX_PROMPT_LENGTH = 10_000  # characters; Gemini supports more but this is a sane cap
+
 ALLOWED_REF_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 MAX_REF_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 
@@ -51,6 +53,26 @@ def get_api_key() -> str:
         print('Then run: export GEMINI_API_KEY="your-key-here"', file=sys.stderr)
         sys.exit(1)
     return api_key
+
+
+def validate_prompt(prompt: str) -> str:
+    """
+    Validate and return the prompt, or exit with an error.
+
+    Checks:
+    - Not empty / whitespace-only
+    - Within MAX_PROMPT_LENGTH characters
+    """
+    if not prompt or not prompt.strip():
+        print("Error: Prompt must not be empty.", file=sys.stderr)
+        sys.exit(1)
+    if len(prompt) > MAX_PROMPT_LENGTH:
+        print(
+            f"Error: Prompt is {len(prompt)} characters, exceeds {MAX_PROMPT_LENGTH} limit.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return prompt
 
 
 def detect_image_format(image_bytes: bytes) -> tuple[str | None, str | None]:
@@ -140,7 +162,11 @@ def generate_image(
     url = f"{API_BASE}/{MODEL_ID}:generateContent?key={api_key}"
 
     # Build parts list - text prompt first, then reference images
-    parts = [{"text": prompt}]
+    validated_prompt = validate_prompt(prompt)
+    # Boundary markers separate user content from any model instructions,
+    # reducing prompt injection risk.
+    wrapped = f"[USER IMAGE REQUEST BEGIN]\n{validated_prompt}\n[USER IMAGE REQUEST END]"
+    parts = [{"text": wrapped}]
 
     # Add reference images if provided
     if reference_images:
