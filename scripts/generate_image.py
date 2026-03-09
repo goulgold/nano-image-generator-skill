@@ -42,7 +42,7 @@ def get_api_key() -> str:
         export GEMINI_API_KEY="AIzaSy..."
     """
     api_key = os.environ.get("GEMINI_API_KEY", "")
-    if not api_key:
+    if not api_key.strip():
         print("Error: GEMINI_API_KEY environment variable is not set.", file=sys.stderr)
         print("Get your key from https://aistudio.google.com/apikey", file=sys.stderr)
         print('Then run: export GEMINI_API_KEY="your-key-here"', file=sys.stderr)
