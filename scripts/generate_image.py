@@ -53,13 +53,10 @@ def get_api_key() -> str:
     return api_key
 
 
-def detect_image_format(image_bytes: bytes) -> tuple[str, str]:
+def detect_image_format(image_bytes: bytes) -> tuple[str | None, str | None]:
     """
     Detect actual image format from magic bytes.
-    Returns: (mime_type, extension)
-
-    Gemini API sometimes reports incorrect mime types, so we verify
-    the actual format from the image data itself.
+    Returns: (mime_type, extension) or (None, None) if unrecognised.
     """
     if image_bytes[:8] == b'\x89PNG\r\n\x1a\n':
         return "image/png", ".png"
@@ -70,8 +67,7 @@ def detect_image_format(image_bytes: bytes) -> tuple[str, str]:
     elif image_bytes[:6] in (b'GIF87a', b'GIF89a'):
         return "image/gif", ".gif"
     else:
-        # Default to PNG if unknown
-        return "image/png", ".png"
+        return None, None
 
 
 def load_image_as_base64(image_path: str) -> tuple[str, str]:
@@ -101,7 +97,7 @@ def load_image_as_base64(image_path: str) -> tuple[str, str]:
     file_size = path.stat().st_size
     if file_size > MAX_REF_SIZE_BYTES:
         print(
-            f"Error: Reference file '{image_path}' is {file_size // (1024*1024)} MB, "
+            f"Error: Reference file '{image_path}' is {file_size / (1024*1024):.1f} MB, "
             f"exceeds {MAX_REF_SIZE_BYTES // (1024*1024)} MB limit.",
             file=sys.stderr,
         )
@@ -110,15 +106,7 @@ def load_image_as_base64(image_path: str) -> tuple[str, str]:
     image_bytes = path.read_bytes()
     mime_type, _ = detect_image_format(image_bytes)
 
-    # detect_image_format falls back to "image/png" for unrecognised bytes —
-    # verify it truly matched a known magic sequence by re-checking.
-    known_magic = (
-        image_bytes[:8] == b'\x89PNG\r\n\x1a\n'
-        or image_bytes[:2] == b'\xff\xd8'
-        or (image_bytes[:4] == b'RIFF' and image_bytes[8:12] == b'WEBP')
-        or image_bytes[:6] in (b'GIF87a', b'GIF89a')
-    )
-    if not known_magic:
+    if mime_type is None:
         print(
             f"Error: Reference file '{image_path}' does not appear to be a valid image "
             f"(unrecognised file signature).",
@@ -213,6 +201,7 @@ def generate_image(
             image_bytes = base64.b64decode(inline_data["data"])
             # Detect actual format from magic bytes (API mime_type can be wrong)
             actual_mime, _ = detect_image_format(image_bytes)
+            actual_mime = actual_mime or "image/png"
             reported_mime = inline_data.get("mimeType", "image/png")
             if actual_mime != reported_mime:
                 print(f"Note: API reported {reported_mime}, actual format is {actual_mime}", file=sys.stderr)

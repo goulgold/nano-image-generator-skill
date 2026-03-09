@@ -15,6 +15,7 @@ def test_valid_png_accepted(tmp_path):
     p.write_bytes(PNG_MAGIC)
     data, mime = load_image_as_base64(str(p))
     assert mime == "image/png"
+    assert data
 
 
 def test_non_image_extension_rejected(tmp_path):
@@ -35,5 +36,11 @@ def test_oversized_file_rejected(tmp_path):
     p = tmp_path / "big.png"
     # Write PNG magic then pad to exceed limit
     p.write_bytes(PNG_MAGIC + b'\x00' * (11 * 1024 * 1024))
+    with pytest.raises(SystemExit):
+        load_image_as_base64(str(p))
+
+
+def test_missing_file_rejected(tmp_path):
+    p = tmp_path / "nonexistent.png"
     with pytest.raises(SystemExit):
         load_image_as_base64(str(p))
