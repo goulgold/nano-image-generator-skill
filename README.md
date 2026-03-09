@@ -16,7 +16,7 @@ A Claude Code skill for generating images using Gemini 3 Pro Preview (Nano Banan
 | Feature | Original | This Version |
 |---------|----------|--------------|
 | Reference images | ❌ Not supported | ✅ Up to 14 images |
-| API key config | Environment variable | Direct code edit |
+| API key config | Environment variable | Environment variable |
 
 ## Setup
 
@@ -26,24 +26,16 @@ Visit: https://aistudio.google.com/apikey
 
 ### 2. Configure API Key
 
-Edit `scripts/generate_image.py`, find the `get_api_key()` function (around line 37):
+Set the environment variable (do **not** hardcode the key in source files):
 
-```python
-def get_api_key():
-    """
-    Get API key.
-
-    ⚠️ SETUP REQUIRED: Replace the placeholder below with your Gemini API key.
-
-    Get your API key from: https://aistudio.google.com/apikey
-    """
-    return "YOUR_GEMINI_API_KEY_HERE"  # <-- Replace this with your API key
+```bash
+export GEMINI_API_KEY="AIzaSy..."
 ```
 
-Replace `YOUR_GEMINI_API_KEY_HERE` with your actual API key:
+Add it to your shell profile (`~/.bashrc`, `~/.zshrc`) to persist:
 
-```python
-    return "AIzaSy..."  # Your actual key
+```bash
+echo 'export GEMINI_API_KEY="AIzaSy..."' >> ~/.zshrc
 ```
 
 ## Installation
@@ -78,7 +70,7 @@ nano-image-generator-skill/
 ├── README.md                   # This file
 ├── README_CN.md                # Chinese documentation
 └── scripts/
-    └── generate_image.py       # Image generation script (edit API key here)
+    └── generate_image.py       # Image generation script
 ```
 
 ## Usage

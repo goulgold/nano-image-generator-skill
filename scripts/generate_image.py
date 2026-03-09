@@ -2,7 +2,7 @@
 """
 Nano Image Generator - Generate images using Google's Gemini 3 Pro Preview API.
 
-Requires: Set your GEMINI_API_KEY in the get_api_key() function below.
+Requires: Set the GEMINI_API_KEY environment variable before running.
 
 Usage:
     python generate_image.py "A cute robot mascot" --output ./mascot.png
@@ -34,15 +34,20 @@ IMAGE_SIZES = ["1K", "2K", "4K"]
 API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
-def get_api_key():
+def get_api_key() -> str:
     """
-    Get API key.
+    Get API key from GEMINI_API_KEY environment variable.
 
-    ⚠️ SETUP REQUIRED: Replace the placeholder below with your Gemini API key.
-
-    Get your API key from: https://aistudio.google.com/apikey
+    Set it before running:
+        export GEMINI_API_KEY="AIzaSy..."
     """
-    return "YOUR_GEMINI_API_KEY_HERE"  # <-- Replace this with your API key
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        print("Error: GEMINI_API_KEY environment variable is not set.", file=sys.stderr)
+        print("Get your key from https://aistudio.google.com/apikey", file=sys.stderr)
+        print('Then run: export GEMINI_API_KEY="your-key-here"', file=sys.stderr)
+        sys.exit(1)
+    return api_key
 
 
 def detect_image_format(image_bytes: bytes) -> tuple[str, str]:
@@ -99,11 +104,6 @@ def generate_image(
     Returns: (image_bytes, mime_type)
     """
     api_key = get_api_key()
-
-    if api_key == "YOUR_GEMINI_API_KEY_HERE":
-        print("Error: Please set your API key in scripts/generate_image.py", file=sys.stderr)
-        print("Edit the get_api_key() function and replace YOUR_GEMINI_API_KEY_HERE", file=sys.stderr)
-        sys.exit(1)
 
     url = f"{API_BASE}/{MODEL_ID}:generateContent?key={api_key}"
 

@@ -16,7 +16,7 @@
 | 功能 | 原版 | 本版本 |
 |------|------|--------|
 | 参考图片 | ❌ 不支持 | ✅ 最多 14 张 |
-| API Key 配置 | 环境变量 | 直接改代码 |
+| API Key 配置 | 环境变量 | 环境变量 |
 
 ## 配置
 
@@ -26,24 +26,16 @@
 
 ### 2. 配置 API Key
 
-编辑 `scripts/generate_image.py`，找到 `get_api_key()` 函数（约第 37 行）：
+设置环境变量（**不要**将 key 硬编码在源文件中）：
 
-```python
-def get_api_key():
-    """
-    Get API key.
-
-    ⚠️ SETUP REQUIRED: Replace the placeholder below with your Gemini API key.
-
-    Get your API key from: https://aistudio.google.com/apikey
-    """
-    return "YOUR_GEMINI_API_KEY_HERE"  # <-- Replace this with your API key
+```bash
+export GEMINI_API_KEY="AIzaSy..."
 ```
 
-将 `YOUR_GEMINI_API_KEY_HERE` 替换为你的实际 API key：
+添加到你的 shell 配置文件（`~/.bashrc`、`~/.zshrc`）以永久生效：
 
-```python
-    return "AIzaSy..."  # 你的实际 key
+```bash
+echo 'export GEMINI_API_KEY="AIzaSy..."' >> ~/.zshrc
 ```
 
 ## 安装
@@ -78,7 +70,7 @@ nano-image-generator-skill/
 ├── README.md                   # 英文文档
 ├── README_CN.md                # 中文文档（本文件）
 └── scripts/
-    └── generate_image.py       # 图片生成脚本（在这里配置 API key）
+    └── generate_image.py       # 图片生成脚本
 ```
 
 ## 使用方法
